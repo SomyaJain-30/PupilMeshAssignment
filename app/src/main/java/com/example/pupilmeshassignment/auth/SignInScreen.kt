@@ -1,12 +1,14 @@
 package com.example.pupilmeshassignment.auth
 
-import android.widget.Space
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,8 +22,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -47,15 +51,67 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.pupilmeshassignment.R
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.datastore.core.DataStore
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.pupilmeshassignment.MyApp
+import com.example.pupilmeshassignment.data.AppContainer
+import com.example.pupilmeshassignment.data.MyDatabase
+import com.example.pupilmeshassignment.data.repository.UserRepository
+import com.example.pupilmeshassignment.utils.DataStoreManager
+import kotlin.math.sign
 
 @Composable
-fun SignInScreen() {
+fun SignInScreen(viewModel: AuthViewModel = getAuthViewModel(), onSignInSuccess: () -> Unit) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val isPasswordVisible by remember { mutableStateOf(false) }
+    var isEmailValidated by remember { mutableStateOf(false) }
+    var isPasswordValidated by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    val signInResultState by viewModel.signInResult.collectAsState()
+    val dataStoreManager = remember { DataStoreManager.getInstance(context) }
+
+    LaunchedEffect(System.currentTimeMillis(), signInResultState) {
+        when (signInResultState) {
+            is SignInResult.Loading -> {
+                isLoading = true
+                Log.e("CHECK-->", "SignInScreen: Loading")
+            }
+
+            is SignInResult.Success -> {
+                isLoading = false
+                onSignInSuccess()
+                dataStoreManager.setUserSignedIn(true)
+                Toast.makeText(context, "Sign in successful", Toast.LENGTH_SHORT).show()
+                viewModel.resetSignInResult()
+
+            }
+
+            is SignInResult.Error -> {
+                isLoading = false
+                Toast.makeText(
+                    context,
+                    (signInResultState as SignInResult.Error).message,
+                    Toast.LENGTH_SHORT
+                ).show()
+                Log.e("CHECK-->", "SignInScreen: Error")
+                viewModel.resetSignInResult()
+            }
+
+            is SignInResult.Initial -> {
+                isLoading = false
+                Log.e("CHECK-->", "SignInScreen: Initial")
+            }
+        }
+    }
 
 
     Box(
@@ -98,7 +154,7 @@ fun SignInScreen() {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(vertical = 20.dp, horizontal = 16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
@@ -194,7 +250,12 @@ fun SignInScreen() {
 
                     OutlinedTextField(
                         value = email,
-                        onValueChange = { email = it },
+                        onValueChange = {
+                            email = it
+                            isEmailValidated =
+                                android.util.Patterns.EMAIL_ADDRESS.matcher(it)
+                                    .matches()
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = {
                             Text(
@@ -203,12 +264,19 @@ fun SignInScreen() {
                                 fontSize = 14.sp
                             )
                         },
+                        isError = email.isNotBlank() && !android.util.Patterns.EMAIL_ADDRESS.matcher(
+                            email
+                        ).matches(),
                         singleLine = true,
                         shape = RoundedCornerShape(8.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = Color.White,
                             unfocusedBorderColor = Color.LightGray,
-                            cursorColor = Color.White
+                            cursorColor = Color.White,
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            errorBorderColor = Color.Red,
+                            errorTextColor = Color.White
                         ),
                     )
 
@@ -216,7 +284,10 @@ fun SignInScreen() {
 
                     OutlinedTextField(
                         value = password,
-                        onValueChange = { password = it },
+                        onValueChange = {
+                            password = it
+                            isPasswordValidated = it.isNotBlank()
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = {
                             Text(
@@ -230,7 +301,9 @@ fun SignInScreen() {
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = Color.White,
                             unfocusedBorderColor = Color.LightGray,
-                            cursorColor = Color.White
+                            cursorColor = Color.White,
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
                         ),
                         visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {
@@ -256,10 +329,20 @@ fun SignInScreen() {
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Button(
-                        onClick = {}, modifier = Modifier.fillMaxWidth(),
-                        enabled = false
+                        onClick = { viewModel.signIn(email, password) },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = isPasswordValidated && isEmailValidated && !isLoading,
+                        colors = ButtonDefaults.buttonColors(contentColor = if (isPasswordValidated && isEmailValidated) Color.White else Color.Gray)
                     ) {
-                        Text(text = "Sign In", color = Color.White)
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text(text = "Sign In")
+                        }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
 
@@ -275,8 +358,11 @@ fun SignInScreen() {
                             fontWeight = FontWeight.Normal,
                             fontSize = 12.sp
                         )
-                        Spacer(modifier = Modifier.width(1.dp))
-                        TextButton(onClick = {}) {
+                        TextButton(
+                            onClick = {},
+                            modifier = Modifier.padding(0.dp),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
                             Text(
                                 text = "Sign Up",
                                 color = Color.White,
@@ -295,5 +381,13 @@ fun SignInScreen() {
 @Composable
 @Preview(showBackground = true)
 fun SignInScreenPreview() {
-    SignInScreen()
+    SignInScreen(onSignInSuccess = {})
+}
+
+@Composable
+fun getAuthViewModel(): AuthViewModel {
+    val context = LocalContext.current
+    val appContainer = (context.applicationContext as MyApp).container
+    val repository = appContainer.userRepository
+    return viewModel(factory = AuthViewModelFactory(repository))
 }
