@@ -1,8 +1,16 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("kotlin-kapt")
+}
+
+val secretPropertiesFile = rootProject.file("secrets.properties")
+val secrets = Properties()
+if (secretPropertiesFile.exists()) {
+    secrets.load(secretPropertiesFile.inputStream())
 }
 
 android {
@@ -17,7 +25,10 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "WEB_CLIENT_ID", "\"${secrets.getProperty("WEB_CLIENT_ID")}\"")
     }
+
 
     buildTypes {
         release {
@@ -37,8 +48,10 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
+
 
 dependencies {
 
@@ -73,5 +86,20 @@ dependencies {
     implementation(libs.androidx.lifecycle.livedata.ktx)
     implementation(libs.androidx.lifecycle.extensions)
 
+
+    //Credential Manager
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
+
+    //Gson, Retrofit, Logging Interceptor
+    implementation(libs.converter.gson)
+    implementation(libs.retrofit)
+    implementation(libs.logging.interceptor)
+
+
+    //paging
+    implementation(libs.androidx.paging.runtime)
+    implementation(libs.androidx.paging.compose)
 
 }

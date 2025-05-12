@@ -8,5 +8,5 @@ interface UserRepository {
 
     suspend fun insertUser(user: User)
 
-    suspend fun isValidUser(email: String, password: String): Boolean
+    suspend fun isValidUser(email: String, password: String?): Boolean
 }

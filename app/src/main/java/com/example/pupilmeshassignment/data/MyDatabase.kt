@@ -4,14 +4,17 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.example.pupilmeshassignment.data.dao.MangaDao
 import com.example.pupilmeshassignment.data.dao.UserDao
+import com.example.pupilmeshassignment.data.entity.Manga
 import com.example.pupilmeshassignment.data.entity.User
 import kotlin.concurrent.Volatile
 
-@Database(entities = [User::class], version = 1, exportSchema = false)
+@Database(entities = [User::class, Manga::class], version = 1, exportSchema = false)
 abstract class MyDatabase : RoomDatabase() {
 
     abstract fun userDao(): UserDao
+    abstract fun mangaDao(): MangaDao
 
     companion object {
         @Volatile

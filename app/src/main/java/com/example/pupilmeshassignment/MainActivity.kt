@@ -11,10 +11,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.window.isPopupLayout
 import androidx.core.view.ViewCompat
 import androidx.navigation.NavController
 import androidx.navigation.NavHost
@@ -42,7 +45,6 @@ class MainActivity : ComponentActivity() {
 fun App() {
     val context = LocalContext.current
     val navController = rememberNavController()
-
     val dataStoreManager = remember { DataStoreManager.getInstance(context) }
     val isUserSignedIn = dataStoreManager.getUserSignedIn.collectAsState(initial = false)
     val startDestination = if (isUserSignedIn.value) "Home" else "SignIn"
@@ -61,4 +63,5 @@ fun App() {
         }
     }
 }
+
 

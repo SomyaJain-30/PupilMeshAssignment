@@ -1,6 +1,7 @@
 package com.example.pupilmeshassignment.auth
 
 import android.util.Log
+import android.widget.ImageButton
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -78,6 +79,10 @@ fun SignInScreen(viewModel: AuthViewModel = getAuthViewModel(), onSignInSuccess:
     val context = LocalContext.current
     val signInResultState by viewModel.signInResult.collectAsState()
     val dataStoreManager = remember { DataStoreManager.getInstance(context) }
+
+    LaunchedEffect(Unit) {
+        viewModel.initialize(context)
+    }
 
     LaunchedEffect(System.currentTimeMillis(), signInResultState) {
         when (signInResultState) {
@@ -196,11 +201,15 @@ fun SignInScreen(viewModel: AuthViewModel = getAuthViewModel(), onSignInSuccess:
                                 .border(1.dp, Color.White, CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.ic_google_login),
-                                "Google Login",
-                                modifier = Modifier.size(24.dp)
-                            )
+                            IconButton(onClick = {
+                                viewModel.onGoogleSignInClicked(context)
+                            }) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.ic_google_login),
+                                    "Google Login",
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
                         }
 
                         Spacer(modifier = Modifier.width(12.dp))
@@ -210,14 +219,23 @@ fun SignInScreen(viewModel: AuthViewModel = getAuthViewModel(), onSignInSuccess:
                                 .size(48.dp)
                                 .clip(CircleShape)
                                 .border(1.dp, Color.White, CircleShape),
-                            contentAlignment = Alignment.Center
+                            contentAlignment = Alignment.Center,
                         ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.ic_apple_login),
-                                "Apple Login",
-                                modifier = Modifier.size(24.dp),
-                                colorFilter = ColorFilter.tint(Color.White)
-                            )
+
+                            IconButton(onClick = {
+                                Toast.makeText(
+                                    context,
+                                    "Functionality not Implemented",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.ic_apple_login),
+                                    "Apple Login",
+                                    modifier = Modifier.size(24.dp),
+                                    colorFilter = ColorFilter.tint(Color.White)
+                                )
+                            }
                         }
                     }
 

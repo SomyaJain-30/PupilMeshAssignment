@@ -2,14 +2,13 @@ package com.example.pupilmeshassignment.data.repository
 
 import com.example.pupilmeshassignment.data.dao.UserDao
 import com.example.pupilmeshassignment.data.entity.User
-import kotlinx.coroutines.flow.Flow
 
-class OfflineUserRepository(private val userDao: UserDao) : UserRepository {
+class UserRepositoryImpl(private val userDao: UserDao) : UserRepository {
 
     override suspend fun getUserByEmail(email: String): User? = userDao.getUserByEmail(email)
 
     override suspend fun insertUser(user: User) = userDao.insert(user)
 
-    override suspend fun isValidUser(email: String, password: String): Boolean =
+    override suspend fun isValidUser(email: String, password: String?): Boolean =
         userDao.isValidUser(email, password)
 }

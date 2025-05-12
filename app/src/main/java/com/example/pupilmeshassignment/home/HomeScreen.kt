@@ -56,7 +56,7 @@ fun HomeScreen() {
 
                 when (currentScreen) {
                     "AnimeScreen" -> {
-                        AnimeScreen(paddingValues) {
+                        AnimeScreen(paddingValues = paddingValues) {
                             currentScreen = "AnimeDetailScreen"
                         }
                     }
