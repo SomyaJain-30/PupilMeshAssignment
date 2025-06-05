@@ -1,7 +1,6 @@
 package com.example.pupilmeshassignment.home
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,23 +9,32 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.pupilmeshassignment.R
+import coil.compose.SubcomposeAsyncImage
 
 @Composable
-fun AnimeDetailScreen(onBackClick: () -> Unit) {
+fun AnimeDetailScreen(
+    viewModel: MangaViewModel = getMangaViewModel(),
+    onBackClick: () -> Unit
+) {
+
+    val manga = viewModel.selectedManga.collectAsState()
+
     BackHandler {
         onBackClick()
     }
@@ -52,9 +60,21 @@ fun AnimeDetailScreen(onBackClick: () -> Unit) {
                         .height(200.dp)
                         .background(Color.White)
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_google_login),
-                        contentDescription = "Manga Image"
+                    SubcomposeAsyncImage(
+                        model = manga.value?.thumb,
+                        contentScale = ContentScale.FillBounds,
+                        contentDescription = "Anime Image",
+                        loading = {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                            }
+                        },
+                        error = { Text(text = "Image failed to load") },
+                        modifier = Modifier.fillMaxSize()
+
                     )
                 }
                 Column(
@@ -64,14 +84,14 @@ fun AnimeDetailScreen(onBackClick: () -> Unit) {
                         .weight(1.3f)
                 ) {
                     Text(
-                        text = "Delivery Man from Murim",
+                        text = manga.value?.title ?: "",
                         color = Color.White,
                         fontWeight = FontWeight.Medium,
                         fontSize = 16.sp
                     )
 
                     Text(
-                        text = "Delivery Man from Moorim. The delivery man from moorim. the delivery man from moorim",
+                        text = manga.value?.subTitle ?: "",
                         color = Color.LightGray,
                         fontWeight = FontWeight.Normal,
                         fontSize = 14.sp,
@@ -81,7 +101,7 @@ fun AnimeDetailScreen(onBackClick: () -> Unit) {
             }
 
             Text(
-                text = "The martial god of the murim becomes a super fast deliver man",
+                text = manga.value?.summary ?: "",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Normal,
                 color = Color.LightGray,

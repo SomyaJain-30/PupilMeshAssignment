@@ -1,6 +1,6 @@
 package com.example.pupilmeshassignment.data.repository
 
-import android.util.Log
+import android.net.Network
 import com.example.pupilmeshassignment.data.dao.MangaDao
 import com.example.pupilmeshassignment.data.entity.Manga
 import com.example.pupilmeshassignment.data.entity.MangaResponse
@@ -8,10 +8,12 @@ import com.example.pupilmeshassignment.data.networking.ApiService
 import com.example.pupilmeshassignment.data.networking.NetworkCallResponse
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.isActive
 
 class MangaRepositoryImpl(
     private val apiService: ApiService,
@@ -68,22 +70,11 @@ class MangaRepositoryImpl(
         forceRefresh: Boolean
     ): Flow<NetworkCallResponse<List<MangaResponse.MangaDto>>> {
         return flow {
-            Log.e("CHECK-->", "0")
-            emit(NetworkCallResponse.Loading())
-            Log.e("CHECK-->", "1")
+
             //check cache first if not forcing refresh
             if (!forceRefresh) {
-                /*mangaDao.getMangasByPage(page).collectLatest { mangas ->
-                    if (mangas.isNotEmpty()) {
-                        Log.e("CHECK-->", "2: $mangas")
-                        emit(NetworkCallResponse.Success(mangas.map { it.toDomain() }))
-                        return@collectLatest
-                    }
-                }*/
-
                 val cachedMangas = mangaDao.getMangasByPage(page).firstOrNull()
                 if (!cachedMangas.isNullOrEmpty()) {
-                    Log.e("CHECK-->", "2: $cachedMangas")
                     emit(NetworkCallResponse.Success(cachedMangas.map { it.toDomain() }))
                     return@flow
                 }
@@ -93,7 +84,6 @@ class MangaRepositoryImpl(
             try {
                 val response = apiService.fetchMangas(page)
                 if (response.code == 200) {
-                    Log.e("CHECK-->", "3: ${response.data}")
                     //clear previous data for this page if exist
                     mangaDao.clearPageCache(page)
 
@@ -102,37 +92,28 @@ class MangaRepositoryImpl(
                     mangaDao.insertMangas(mangas ?: emptyList())
 
                     //emit fresh data from database to ensure consistency
-                    mangaDao.getMangasByPage(page).collectLatest { freshMangas ->
-                        emit(NetworkCallResponse.Success(freshMangas.map { it.toDomain() }))
+                    val cacheMangas = mangaDao.getMangasByPage(page).firstOrNull()
+                    if (!cacheMangas.isNullOrEmpty() && currentCoroutineContext().isActive) {
+                        emit(NetworkCallResponse.Success(cacheMangas.map { it.toDomain() }))
+//                        return@flow
                     }
                 } else {
-                    Log.e("CHECK-->", "4: ${response.data}")
-                    emit(NetworkCallResponse.Error("API Error: ${response.code}"))
+                    if (currentCoroutineContext().isActive) {
+                        emit(NetworkCallResponse.Error("API Error: ${response.code}"))
+                    }
                 }
             } catch (e: Exception) {
-                emit(NetworkCallResponse.Error("Network Error: ${e.message}"))
-                Log.e("CHECK-->", "5 ${e.message}}")
                 //try to return cached data
-                /*mangaDao.getMangasByPage(page).collectLatest { mangas ->
-                    if (mangas.isNotEmpty()) {
-                        Log.e("CHECK-->", "6: $mangas")
-                        emit(
-                            NetworkCallResponse.Success(
-                                mangas.map { it.toDomain() },
-                                isCached = true
-                            )
-                        )
-                    }
-                }*/
                 val fallbackMangas = mangaDao.getMangasByPage(page).firstOrNull()
-                if (!fallbackMangas.isNullOrEmpty()) {
-                    Log.e("CHECK-->", "6: $fallbackMangas")
+                if (!fallbackMangas.isNullOrEmpty() && currentCoroutineContext().isActive) {
                     emit(
                         NetworkCallResponse.Success(
                             fallbackMangas.map { it.toDomain() },
                             isCached = true
                         )
                     )
+                } else if (currentCoroutineContext().isActive) {
+                    emit(NetworkCallResponse.Error("Networl Error: ${e.message}"))
                 }
             }
 
@@ -142,7 +123,6 @@ class MangaRepositoryImpl(
     override suspend fun getMangaById(id: String): Flow<NetworkCallResponse<MangaResponse.MangaDto>> {
         return flow {
             emit(NetworkCallResponse.Loading())
-
             try {
                 val manga = mangaDao.getMangaById(id)
                 if (manga != null) {

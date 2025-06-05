@@ -1,6 +1,5 @@
 package com.example.pupilmeshassignment.home
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -42,7 +41,6 @@ class MangaViewModel(
     }
 
     private fun initPaging() {
-        Log.e("CHECK-->", "initPaging: 1")
         viewModelScope.launch {
             Pager(
                 config = PagingConfig(
@@ -54,7 +52,6 @@ class MangaViewModel(
                     MangaPagingSource(mangaRepository)
                 }
             ).flow.cachedIn(viewModelScope).collectLatest { pagingData ->
-                Log.e("CHECK-->", "initPaging: 2 ${pagingData}")
                 _mangas.value = pagingData
             }
         }

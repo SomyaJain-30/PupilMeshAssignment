@@ -1,6 +1,5 @@
 package com.example.pupilmeshassignment.data.networking
 
-import androidx.compose.animation.core.rememberTransition
 
 object AppModule {
 

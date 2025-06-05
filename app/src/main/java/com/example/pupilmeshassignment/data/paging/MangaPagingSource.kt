@@ -21,13 +21,9 @@ class MangaPagingSource(private val repository: MangaRepository) :
         val pageNumber = params.key ?: 1
 
         return try {
-            val response = repository.getMangas(pageNumber).first()
-            Log.e("CHECK-->", "Paging: 1")
-            Log.e("CHECK-->", "Paging: 1: $response")
-            when (response) {
+            when (val response = repository.getMangas(pageNumber).first()) {
                 is NetworkCallResponse.Success -> {
                     val mangas = response.data ?: emptyList()
-                    Log.e("CHECK-->", "Paging: 2")
 
                     LoadResult.Page(
                         data = mangas,
@@ -37,17 +33,14 @@ class MangaPagingSource(private val repository: MangaRepository) :
                 }
 
                 is NetworkCallResponse.Error -> {
-                    Log.e("CHECK-->", "Paging: 3")
                     LoadResult.Error(Exception(response.message))
                 }
 
                 else -> {
-                    Log.e("CHECK-->", "Paging: 4")
                     LoadResult.Error(Exception("Unknown Error"))
                 }
             }
         } catch (e: Exception) {
-            Log.e("CHECK-->", "Paging: 5")
             LoadResult.Error(e)
         }
     }

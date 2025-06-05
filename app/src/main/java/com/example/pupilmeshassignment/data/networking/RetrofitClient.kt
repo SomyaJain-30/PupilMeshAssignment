@@ -19,8 +19,8 @@ object RetrofitClient {
         .addInterceptor(loggingInterceptor)
         .addInterceptor { chain ->
             val request = chain.request().newBuilder()
-                .addHeader("X-RapidAPI-Key", API_KEY)
-                .addHeader("X-RapidAPI-Host", API_HOST)
+                .addHeader("x-rapidapi-key", API_KEY)
+                .addHeader("x-rapidapi-host", API_HOST)
                 .build()
 
             chain.proceed(request)
