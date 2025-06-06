@@ -1,39 +1,75 @@
 package com.example.pupilmeshassignment.home
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
+import androidx.camera.core.SurfaceRequest
+import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
+import com.google.accompanist.permissions.shouldShowRationale
 
+
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun FaceDetectionScreen(paddingValues: PaddingValues) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-            .padding(paddingValues)
-    ) {
-        Card(
-            shape = RoundedCornerShape(8.dp),
-            modifier = Modifier
-                .height(200.dp)
-                .width(200.dp)
-                .align(Alignment.Center)
-        ) {
+    val context = LocalContext.current
+    val cameraPermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
 
+    LaunchedEffect(Unit) {
+        if (!cameraPermissionState.status.isGranted && cameraPermissionState.status.shouldShowRationale) {
+
+        } else {
+            cameraPermissionState.launchPermissionRequest()
         }
     }
+
+    if (cameraPermissionState.status.isGranted) {
+//        CameraPreviewContent()
+    }
+
+}
+
+//@Composable
+//fun CameraPreviewContent(
+//    viewModel: FaceDetectionViewModel,
+//    lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
+//) {
+//    val context = LocalContext.current
+//    val surfaceRequest by viewModel.surfaceRequest.collectAsStateWithLifecycle()
+//
+//    LaunchedEffect(Unit) {
+//        viewModel.bindToCamera(context.applicationContext, lifecycleOwner)
+//    }
+//    surfaceRequest?.let { request ->
+//    }
+//}
+
+@Composable
+fun CameraXViewFinder(surfaceRequest: SurfaceRequest) {
+    AndroidView(
+        factory = { context ->
+            val previewView = PreviewView(context).apply {
+                scaleType = PreviewView.ScaleType.FILL_CENTER
+            }
+            // Provide the surface to CameraX when it's available
+            /*previewView.surfaceProvider = androidx.camera.core.Preview.SurfaceProvider { request ->
+                surfaceRequest.provideSurface(
+                    request.surface,
+                    ContextCompat.getMainExecutor(context)
+                ) { result ->
+                    Log.d("CameraX", "Surface provided result: $result")
+                }
+            }*/
+
+
+            previewView
+        }
+    )
 }
 
 @Composable

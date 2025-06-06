@@ -10,7 +10,6 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.isActive
@@ -81,7 +80,7 @@ class MangaRepositoryImpl(
             }
 
             //if cache is empty or force refresh, fetch from network
-            try {
+            val result = try {
                 val response = apiService.fetchMangas(page)
                 if (response.code == 200) {
                     //clear previous data for this page if exist
@@ -94,29 +93,26 @@ class MangaRepositoryImpl(
                     //emit fresh data from database to ensure consistency
                     val cacheMangas = mangaDao.getMangasByPage(page).firstOrNull()
                     if (!cacheMangas.isNullOrEmpty() && currentCoroutineContext().isActive) {
-                        emit(NetworkCallResponse.Success(cacheMangas.map { it.toDomain() }))
-//                        return@flow
+                        NetworkCallResponse.Success(cacheMangas.map { it.toDomain() })
+                    } else {
+                        NetworkCallResponse.Error("Failed to cache data")
                     }
                 } else {
-                    if (currentCoroutineContext().isActive) {
-                        emit(NetworkCallResponse.Error("API Error: ${response.code}"))
-                    }
+                    NetworkCallResponse.Error("API Error: ${response.code}")
                 }
             } catch (e: Exception) {
                 //try to return cached data
                 val fallbackMangas = mangaDao.getMangasByPage(page).firstOrNull()
-                if (!fallbackMangas.isNullOrEmpty() && currentCoroutineContext().isActive) {
-                    emit(
-                        NetworkCallResponse.Success(
-                            fallbackMangas.map { it.toDomain() },
-                            isCached = true
-                        )
+                if (!fallbackMangas.isNullOrEmpty()) {
+                    NetworkCallResponse.Success(
+                        fallbackMangas.map { it.toDomain() },
+                        isCached = true
                     )
-                } else if (currentCoroutineContext().isActive) {
-                    emit(NetworkCallResponse.Error("Networl Error: ${e.message}"))
+                } else {
+                    NetworkCallResponse.Error("Network Error: ${e.message}")
                 }
             }
-
+            emit(result)
         }
     }
 
